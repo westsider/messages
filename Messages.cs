@@ -34,16 +34,16 @@ namespace NinjaTrader.NinjaScript.Indicators
 			"I don't honor stops when \nthe trade idea is weak.",
 			"How can I align with what the market is trying to do,\n not what I’m trying to do?", 
 			"Expect 30% losses.", 
-			"Look at fewer things with more understanding ", 
-			"Please help me to take my stops.",
+			"Look at fewer things with more understanding", 
+			"Please help me take my stops.",
 			"Fib extension on range if we break the\n1.61 we go up to 2.61 and start a new range", 
 			"We reject the Lvn to head back to the Hvn.", 
-			"Properly motivated is key, if money is the motivation \nthen how to I work hard on losing days?",
+			"Properly motivated is key, if money is the motivation \nthen how to I execute correctly on losing days?",
 			"Do I believe in this setup enough \nto put a stop under it?",
-			"If I don't see goo cyclic turns,\n I can find key levels plus TickStrike."
+			"If I don't see good cyclic turns,\n I can find key levels plus TickStrike."
 		};
 
-
+		private TextPosition TextPos = TextPosition.Center;
 	
 		protected override void OnStateChange()
 		{
@@ -64,6 +64,10 @@ namespace NinjaTrader.NinjaScript.Indicators
 				IsSuspendedWhileInactive					= true;
 				MessageFontSize								= 14;
 				MessageFontColor							= Brushes.WhiteSmoke;
+				MessageBackgroundColor						= Brushes.DimGray;
+				MessageBackgroundOpacity					= 70;
+				MessageLocation								= TextPosition.Center;
+				
 				DisplayMinutes								= 1;
 				MessageDelayMinutes							= 5;
 			}
@@ -94,8 +98,8 @@ namespace NinjaTrader.NinjaScript.Indicators
 			if (BarsInProgress == 1) {
 				//Draw.TextFixed(this, "MyTextFixed", CurrentMessage, TextPosition.Center);
 				myFont.Size = MessageFontSize;
-				Draw.TextFixed(this, "myTextFixed", CurrentMessage, TextPosition.Center, MessageFontColor,
- 					 myFont, Brushes.Transparent, Brushes.DimGray, 70);
+				Draw.TextFixed(this, "myTextFixed", CurrentMessage, MessageLocation, MessageFontColor,
+ 					 myFont, Brushes.Transparent, MessageBackgroundColor, MessageBackgroundOpacity);
 			}	
 		}
 		
@@ -113,6 +117,7 @@ namespace NinjaTrader.NinjaScript.Indicators
 		}
 		
 		#region Properties
+		
 		[NinjaScriptProperty]
 		[Range(1, int.MaxValue)]
 		[Display(Name="MessageFontSize", Order=1, GroupName="Parameters")]
@@ -133,14 +138,40 @@ namespace NinjaTrader.NinjaScript.Indicators
 		}			
 
 		[NinjaScriptProperty]
+		[XmlIgnore]
+		[Display(Name="Message Background Color", Order=3, GroupName="Parameters")]
+		public Brush MessageBackgroundColor
+		{ get; set; }
+
+		[Browsable(false)]
+		public string MessageBackgroundColorSerializable
+		{
+			get { return Serialize.BrushToString(MessageBackgroundColor); }
+			set { MessageBackgroundColor = Serialize.StringToBrush(value); }
+		}
+		
+		[NinjaScriptProperty]
 		[Range(1, int.MaxValue)]
-		[Display(Name="DisplayMinutes", Order=3, GroupName="Parameters")]
+		[Display(Name="MessageBackgroundOpacity", Order=4, GroupName="Parameters")]
+		public int MessageBackgroundOpacity
+		{ get; set; }
+		
+		[NinjaScriptProperty]
+		[Display(Name="Message Location", Description="Message Location", Order=5, GroupName="Parameters")]
+		public TextPosition MessageLocation
+		{ get; set; }
+		
+		// --------------------- duration -----------------------
+		
+		[NinjaScriptProperty]
+		[Range(1, int.MaxValue)]
+		[Display(Name="Message Display Time In Minutes", Order=1, GroupName="Duration")]
 		public int DisplayMinutes
 		{ get; set; }
 
 		[NinjaScriptProperty]
 		[Range(1, int.MaxValue)]
-		[Display(Name="MessageDelayMinutes", Order=4, GroupName="Parameters")]
+		[Display(Name="Minutes Bettween Messages", Order=2, GroupName="Duration")]
 		public int MessageDelayMinutes
 		{ get; set; }
 		#endregion
@@ -155,18 +186,18 @@ namespace NinjaTrader.NinjaScript.Indicators
 	public partial class Indicator : NinjaTrader.Gui.NinjaScript.IndicatorRenderBase
 	{
 		private Messages[] cacheMessages;
-		public Messages Messages(int messageFontSize, Brush messageFontColor, int displayMinutes, int messageDelayMinutes)
+		public Messages Messages(int messageFontSize, Brush messageFontColor, Brush messageBackgroundColor, int messageBackgroundOpacity, TextPosition messageLocation, int displayMinutes, int messageDelayMinutes)
 		{
-			return Messages(Input, messageFontSize, messageFontColor, displayMinutes, messageDelayMinutes);
+			return Messages(Input, messageFontSize, messageFontColor, messageBackgroundColor, messageBackgroundOpacity, messageLocation, displayMinutes, messageDelayMinutes);
 		}
 
-		public Messages Messages(ISeries<double> input, int messageFontSize, Brush messageFontColor, int displayMinutes, int messageDelayMinutes)
+		public Messages Messages(ISeries<double> input, int messageFontSize, Brush messageFontColor, Brush messageBackgroundColor, int messageBackgroundOpacity, TextPosition messageLocation, int displayMinutes, int messageDelayMinutes)
 		{
 			if (cacheMessages != null)
 				for (int idx = 0; idx < cacheMessages.Length; idx++)
-					if (cacheMessages[idx] != null && cacheMessages[idx].MessageFontSize == messageFontSize && cacheMessages[idx].MessageFontColor == messageFontColor && cacheMessages[idx].DisplayMinutes == displayMinutes && cacheMessages[idx].MessageDelayMinutes == messageDelayMinutes && cacheMessages[idx].EqualsInput(input))
+					if (cacheMessages[idx] != null && cacheMessages[idx].MessageFontSize == messageFontSize && cacheMessages[idx].MessageFontColor == messageFontColor && cacheMessages[idx].MessageBackgroundColor == messageBackgroundColor && cacheMessages[idx].MessageBackgroundOpacity == messageBackgroundOpacity && cacheMessages[idx].MessageLocation == messageLocation && cacheMessages[idx].DisplayMinutes == displayMinutes && cacheMessages[idx].MessageDelayMinutes == messageDelayMinutes && cacheMessages[idx].EqualsInput(input))
 						return cacheMessages[idx];
-			return CacheIndicator<Messages>(new Messages(){ MessageFontSize = messageFontSize, MessageFontColor = messageFontColor, DisplayMinutes = displayMinutes, MessageDelayMinutes = messageDelayMinutes }, input, ref cacheMessages);
+			return CacheIndicator<Messages>(new Messages(){ MessageFontSize = messageFontSize, MessageFontColor = messageFontColor, MessageBackgroundColor = messageBackgroundColor, MessageBackgroundOpacity = messageBackgroundOpacity, MessageLocation = messageLocation, DisplayMinutes = displayMinutes, MessageDelayMinutes = messageDelayMinutes }, input, ref cacheMessages);
 		}
 	}
 }
@@ -175,14 +206,14 @@ namespace NinjaTrader.NinjaScript.MarketAnalyzerColumns
 {
 	public partial class MarketAnalyzerColumn : MarketAnalyzerColumnBase
 	{
-		public Indicators.Messages Messages(int messageFontSize, Brush messageFontColor, int displayMinutes, int messageDelayMinutes)
+		public Indicators.Messages Messages(int messageFontSize, Brush messageFontColor, Brush messageBackgroundColor, int messageBackgroundOpacity, TextPosition messageLocation, int displayMinutes, int messageDelayMinutes)
 		{
-			return indicator.Messages(Input, messageFontSize, messageFontColor, displayMinutes, messageDelayMinutes);
+			return indicator.Messages(Input, messageFontSize, messageFontColor, messageBackgroundColor, messageBackgroundOpacity, messageLocation, displayMinutes, messageDelayMinutes);
 		}
 
-		public Indicators.Messages Messages(ISeries<double> input , int messageFontSize, Brush messageFontColor, int displayMinutes, int messageDelayMinutes)
+		public Indicators.Messages Messages(ISeries<double> input , int messageFontSize, Brush messageFontColor, Brush messageBackgroundColor, int messageBackgroundOpacity, TextPosition messageLocation, int displayMinutes, int messageDelayMinutes)
 		{
-			return indicator.Messages(input, messageFontSize, messageFontColor, displayMinutes, messageDelayMinutes);
+			return indicator.Messages(input, messageFontSize, messageFontColor, messageBackgroundColor, messageBackgroundOpacity, messageLocation, displayMinutes, messageDelayMinutes);
 		}
 	}
 }
@@ -191,14 +222,14 @@ namespace NinjaTrader.NinjaScript.Strategies
 {
 	public partial class Strategy : NinjaTrader.Gui.NinjaScript.StrategyRenderBase
 	{
-		public Indicators.Messages Messages(int messageFontSize, Brush messageFontColor, int displayMinutes, int messageDelayMinutes)
+		public Indicators.Messages Messages(int messageFontSize, Brush messageFontColor, Brush messageBackgroundColor, int messageBackgroundOpacity, TextPosition messageLocation, int displayMinutes, int messageDelayMinutes)
 		{
-			return indicator.Messages(Input, messageFontSize, messageFontColor, displayMinutes, messageDelayMinutes);
+			return indicator.Messages(Input, messageFontSize, messageFontColor, messageBackgroundColor, messageBackgroundOpacity, messageLocation, displayMinutes, messageDelayMinutes);
 		}
 
-		public Indicators.Messages Messages(ISeries<double> input , int messageFontSize, Brush messageFontColor, int displayMinutes, int messageDelayMinutes)
+		public Indicators.Messages Messages(ISeries<double> input , int messageFontSize, Brush messageFontColor, Brush messageBackgroundColor, int messageBackgroundOpacity, TextPosition messageLocation, int displayMinutes, int messageDelayMinutes)
 		{
-			return indicator.Messages(input, messageFontSize, messageFontColor, displayMinutes, messageDelayMinutes);
+			return indicator.Messages(input, messageFontSize, messageFontColor, messageBackgroundColor, messageBackgroundOpacity, messageLocation, displayMinutes, messageDelayMinutes);
 		}
 	}
 }
